@@ -11,5 +11,6 @@
     "port": 9000,
     "username": "admin",
     "password": "admin123"
-  }
+  },
+  "version": "1.0.0"
 }

@@ -225,13 +225,9 @@ export default {
         })
         console.log('@@@@@@@@@@@@@@@@@@@@@@@ runningTasks:', runningTask)
         if (runningTask) {
-          if (runningTask.status === 'pause') {
-            this.$store.commit('common/updateTaskStatus', {task_id:runningTask.task_id,status:'init'})
-            PubSub.publish('download', {id:runningTask.task_id,status:'init'})
-          }
-          const msg = `文件[${file.file_name}]正在下载`
-          this.$message.info(msg)
-          resolve(msg)
+          this.$store.commit('common/updateTaskStatus', {task_id:runningTask.task_id,status:'init'})
+          PubSub.publish('download', {id:runningTask.task_id,status:'init'})
+          resolve(`文件[${file}]正在下载`)
         } else resolve(null)
       })
     },

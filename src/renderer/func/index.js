@@ -36,7 +36,7 @@ async function readLatestMigrateFile() {
   const fs = require('fs')
   const files = await readDirFiles('./static/migrate/')
   const validFiles = files.filter(fileName => {
-    return /^\d+\.\d+\.\d+\.sql$/.test(fileName)
+    return /^(?:[0-9]|10)\.(?:[0-9]|10)\.(?:[0-9]|10)\.sql$/.test(fileName)
   })
   console.log('migrate files:', validFiles)
   let maxNum = 0
@@ -63,7 +63,7 @@ function writeConfigFile(setting) {
   })
 }
 
-function playVideo(file_db_key) {
+function playVideo(file_db_key, file_type) {
   const url = path.join('./data/', file_db_key)
   const env = {
     FFPROBE_PATH: path.join('./static/','ffprobe.exe'),
@@ -72,7 +72,7 @@ function playVideo(file_db_key) {
   console.log('playVideo:', url, env)
   execFile(
     './static/videoEditor.exe',
-    ['play', 'local', url],
+    ['play', 'local', file_type, url],
     { env: env},
     (error, stdout, stderr) => {
     if (error) return console.error(error)
@@ -82,7 +82,7 @@ function playVideo(file_db_key) {
   })
 }
 
-function showPic(file_db_key) {
+function showPic(file_db_key, file_type) {
   const url = path.join('./data/', file_db_key)
   const env = {
     FFPROBE_PATH: path.join('./static/','ffprobe.exe'),
@@ -91,7 +91,7 @@ function showPic(file_db_key) {
   console.log('showPic:', url, env)
   execFile(
     './static/videoEditor.exe',
-    ['pic', 'local', url],
+    ['pic', 'local', file_type, url],
     { env: env},
     (error, stdout, stderr) => {
     if (error) return console.error(error)
@@ -101,7 +101,7 @@ function showPic(file_db_key) {
   })
 }
 
-function editVideo(file_db_key) {
+function editVideo(file_db_key, file_type) {
   const url = path.join('./data/', file_db_key)
   const env = {
     FFPROBE_PATH: path.join('./static/','ffprobe.exe'),
@@ -110,62 +110,7 @@ function editVideo(file_db_key) {
   console.log('editVideo:', url, env)
   execFile(
     './static/videoEditor.exe',
-    ['edit', 'local', url],
-    { env: env},
-    (error, stdout, stderr) => {
-    if (error) return console.error(error)
-      // 输出exe文件的标准输出
-      console.log('stdout:', stdout)
-      console.log('stderr:', stderr)
-    }
-  )
-}
-
-function playVideoOnline(url, video_type) {
-  const env = {
-    FFPROBE_PATH: path.join('./static/','ffprobe.exe'),
-    FFMPEG_PATH: path.join('./static/','ffmpeg.exe')
-  }
-  console.log('playVideoOnline:', url, video_type, env)
-  execFile(
-    './static/videoEditor.exe',
-    ['play', 'online', video_type, url],
-    { env: env},
-    (error, stdout, stderr) => {
-    if (error) return console.error(error)
-    // 输出exe文件的标准输出
-    console.log('stdout:', stdout)
-    console.log('stderr:', stderr)
-  })
-}
-
-function showPicOnline(url, pic_type) {
-  const env = {
-    FFPROBE_PATH: path.join('./static/','ffprobe.exe'),
-    FFMPEG_PATH: path.join('./static/','ffmpeg.exe')
-  }
-  console.log('showPic:', url, pic_type, env)
-  execFile(
-    './static/videoEditor.exe',
-    ['pic', 'online', pic_type, url],
-    { env: env},
-    (error, stdout, stderr) => {
-    if (error) return console.error(error)
-    // 输出exe文件的标准输出
-    console.log('stdout:', stdout)
-    console.log('stderr:', stderr)
-  })
-}
-
-function editVideoOnline(url, video_type) {
-  const env = {
-    FFPROBE_PATH: path.join('./static/','ffprobe.exe'),
-    FFMPEG_PATH: path.join('./static/','ffmpeg.exe')
-  }
-  console.log('editVideo:', url, video_type, env)
-  execFile(
-    './static/videoEditor.exe',
-    ['edit', 'online', video_type, url],
+    ['edit', 'local', file_type, url],
     { env: env},
     (error, stdout, stderr) => {
     if (error) return console.error(error)
@@ -183,8 +128,5 @@ export {
   playVideo,
   showPic,
   editVideo,
-  playVideoOnline,
-  showPicOnline,
-  editVideoOnline,
   readLatestMigrateFile
 }

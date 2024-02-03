@@ -43,22 +43,19 @@ function initMinio() {
   })
 }
 
-function putObject(fileName, stream, size) {
-  // console.log('putObject:',fileName,size)
-  return new Promise(resolve => {
-    minioClient.putObject(defaultBucketName, fileName, stream, size, function(err, objInfo) {
-      if(err) {
-        errLog(err.stack)
-        console.log(err)
-        resolve(err)
-      } else resolve(null)
-      // console.log('putObject complete:',fileName,size)
-    })
+function putObject(file, fileName, type) {
+  minioClient.putObject(defaultBucketName, fileName, file, file.size, function(err, objInfo) {
+    if(err) {
+      errLog(err.stack)
+      console.log(err)
+      return
+    }
+    console.log("putObject Success:", objInfo)
   })
 }
 
 function fPutObject(file_path, file_size, fileName, type) {
-  return new Promise((resolve,reject) => {
+  return new Promise((resove,reject) => {
     var metaData = {
       'Content-Type': type,
       'size': file_size
@@ -71,7 +68,7 @@ function fPutObject(file_path, file_size, fileName, type) {
         return
       }
       console.log("fPutObject Success:", objInfo)
-      resolve(objInfo)
+      resove(objInfo)
     })
   })
 }
@@ -118,7 +115,6 @@ function composeObjects(chunkFileNames, destFileName, fileType, md5=null) {
   })
 }
 
-// 一次最多删除1000个obj
 function removeObjects(objectNames) {
   console.log('removeObjects:', objectNames)
   return new Promise(resolve => {
@@ -148,7 +144,7 @@ function presignedGetObject(fileName, expire=1*24*60*60) {
 }
 
 function getPartialObject(fileName, offset, length, callback) {
-  // console.log('getPartialObject:',fileName, offset, length)
+  console.log('getPartialObject:',fileName, offset, length)
   return minioClient.getPartialObject(defaultBucketName, fileName, offset, length, callback)
 }
 
@@ -188,7 +184,7 @@ function listObjects(prefix='', recursive=false, startAfter='') {
 
 function copyObject(srcFileName, dstFileName) {
   console.log('copyObject:',srcFileName, dstFileName)
-  return new Promise((resolve,reject) => {
+  return new Promise((resove,reject) => {
     var conds = new Minio.CopyConditions()
     minioClient.copyObject(defaultBucketName, dstFileName, `${defaultBucketName}/${srcFileName}`, conds, function(err, objInfo) {
       if (err) {
@@ -198,7 +194,7 @@ function copyObject(srcFileName, dstFileName) {
         return
       }
       console.log("copyObject Success:", objInfo)
-      resolve(objInfo)
+      resove(objInfo)
     })
   })
 }

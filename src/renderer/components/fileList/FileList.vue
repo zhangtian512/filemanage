@@ -181,7 +181,6 @@
     <DownloadDialog v-if="downloadDialogShow" :show.sync="downloadDialogShow" :files="selectedRow"/>
     <UploadDialog v-if="uploadDialogShow" :show.sync="uploadDialogShow" :currSelDir="currSelPath" :currSelDirId="currentDir.id"/>
     <PreviewDialog v-if="previewDialogShow" :show.sync="previewDialogShow" :url="previewUrl" :type="previewType" :data-type="previewDataType"/>
-    <EditVideo v-if="editVideoDialogShow" :show.sync="editVideoDialogShow" :src="editUrl" :type="editType"/>
   </div>
 </template>
   
@@ -193,11 +192,10 @@ import DelDirDialog from './DelDirDialog.vue'
 import RenameDialog from './RenameDialog.vue'
 import DownloadDialog from './DownloadDialog.vue'
 import PreviewDialog from './PreviewDialog.vue'
-import EditVideo from './EditVideo.vue'
 import UploadDialog from './UploadDialog.vue'
 import { listToTree,fmtDate,calcFileSize } from '@/util/index.js'
 import { PubSub } from '@/func/pubsub.js'
-import { playVideoOnline,showPicOnline,editVideoOnline } from '@/func/index.js'
+import { playVideo,showPic,editVideo } from '@/func/index.js'
 // 双击
 const n = {
 	count: 0,
@@ -215,7 +213,7 @@ const dbClicks = (node, id, cb) => {
 }
 export default {
   name: '',
-  components: {NewDirDialog,DelDirDialog,RenameDialog,DownloadDialog,UploadDialog,PreviewDialog,EditVideo},
+  components: {NewDirDialog,DelDirDialog,RenameDialog,DownloadDialog,UploadDialog,PreviewDialog},
   props: {},
   data () {
     return {
@@ -253,7 +251,6 @@ export default {
       previewUrl: '',
       previewType: '',
       previewDataType: '',
-      editVideoDialogShow: false,
       editUrl: '',
       editType: ''
     }
@@ -552,28 +549,22 @@ export default {
       if (menuItem.value === 'preview') {
         const arr = this.contextMenuData.file_name.split('.')
         this.previewDataType = arr[arr.length-1]
-        this.previewUrl = await presignedGetObject(this.contextMenuData.file_db_key)
+        // this.previewUrl = await presignedGetObject(this.contextMenuData.file_db_key)
         if (['avi','rmvb','mov','mp4','mkv'].includes(this.previewDataType)) {
-          playVideoOnline(this.previewUrl, this.previewDataType)
+          playVideo(this.contextMenuData.file_db_key, this.previewDataType)
           return
         }
         if (['jpg','jpeg','bmp','png','gif'].includes(this.previewDataType)) {
-          showPicOnline(this.previewUrl, this.previewDataType)
+          showPic(this.contextMenuData.file_db_key, this.previewDataType)
           return
         }
-
-        // if (['mp4'].includes(this.previewDataType)) this.previewType = 'video'
-        // if (['jpg','jpeg','bmp','png','svg','gif'].includes(this.previewDataType)) this.previewType = 'pic'
-        // this.previewDialogShow = true
       }
       if (menuItem.value === 'editvideo') {
+        // this.editUrl = await presignedGetObject(this.contextMenuData.file_db_key)
         const arr = this.contextMenuData.file_name.split('.')
         this.editType = arr[arr.length-1]
-        this.editUrl = await presignedGetObject(this.contextMenuData.file_db_key)
-        editVideoOnline(this.editUrl, this.editType)
+        editVideo(this.contextMenuData.file_db_key, this.editType)
         return
-        // this.editType = this.contextMenuData.file_type
-        // this.editVideoDialogShow = true
       }
     },
     newDirSucc(newDir,parentId) {

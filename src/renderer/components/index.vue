@@ -38,11 +38,10 @@
 import axios from 'axios'
 import { remote } from 'electron'
 import { Task,File } from '@/db/pg.js'
+import { statObject } from '@/db/minio.js'
 import { fileMD5,rmDir,fmtDate,readDirFiles,isFileExists,statFile } from '@/util/index.js'
 import { chunkSize } from '@/config'
-import { findFileInPgByKey } from '@/func/file.js'
-import { uploadFile,clearUploadTaskChunk,downloadFile,clearDownloadTaskChunk } from '@/func/file_online.js'
-import { statObject } from '@/db/minio.js'
+import { uploadFile,uploadFileLocal,downloadFile,downloadFileLocal,clearTaskChunk,findFileInPgByKey } from '@/func/file.js'
 import { PubSub } from '@/func/pubsub.js'
 import path from 'path'
 
@@ -153,15 +152,6 @@ export default {
             const file_info = statFile(task.file_path)
             console.log('file_info:', file_info)
             const fileSize = file_info.size
-
-            // 最大上传25G文件
-            if (fileSize>25*1024*1024*1024) {
-              const msg = `文件大小超过25G:${(fileSize/1024/1024/1024).toFixed(2)}G`
-              this.$message.error(msg)
-              this.$store.commit('common/updateTaskStatus', {task_id:task.task_id,status:'error',err_msg:msg})
-              PubSub.publish('upload', {id:task.task_id,status:'error',err:msg})
-              return
-            }
             
             // 计算md5
             const {md5, err} = await fileMD5(task.file_path)
@@ -175,6 +165,7 @@ export default {
               PubSub.publish('upload', {id:task.task_id,status:'error',err:'计算文件md5失败'})
               return
             }
+
             // 如果队列中有相同md5的文件正在上传直接报错
             const sameMd5Task = this.$store.state.common.tasks.find(item => {
               return item.task_type==='upload'&&item.file_id===md5&&['init','pause','uploading','composing','cancel'].includes(item.status)
@@ -191,7 +182,7 @@ export default {
               console.log('========= 文件的md5改变 =========')
               const total_chunk_num = fileSize>0?Math.ceil(fileSize/chunkSize):0
               this.$store.commit('common/updateTaskFileSizeAndTotalChunkNum', {task_id:task.task_id,file_size:fileSize,total_chunk_num:total_chunk_num})
-              await clearUploadTaskChunk(task)
+              await clearTaskChunk(task)
             }
 
             // 从数据库中加载的task没有total_chunk_num，如果客户端重启，则需要重新计算total_chunk_num
@@ -210,8 +201,8 @@ export default {
               this.$store.commit('common/updateUploadTaskFileDbKey', {task_id:task.task_id,file_db_key:file_db_key})
             }
             this.$store.commit('common/setCanceler', {task_id:task.task_id,canceler:axios.CancelToken.source()})
-            // uploadFileLocal(task)
-            uploadFile(task)
+            uploadFileLocal(task)
+            // uploadFile(task)
             return
           case 'pause':
             this.$store.commit('common/updateTaskStatus', {task_id:task.task_id,status:'pause'})
@@ -220,7 +211,7 @@ export default {
           case 'cancel':
             if (task.canceler) task.canceler.cancel('canceled by user')
             this.$store.commit('common/removeTask', [task])
-            clearUploadTaskChunk(task)
+            clearTaskChunk(task)
             return
           case 'completed':
             await File.save({
@@ -263,7 +254,7 @@ export default {
             let err = await this.checkDownloadDir(task.target_path, task.file_name)
             if (err) {
               this.$store.commit('common/updateTaskStatus', {task_id:task.task_id,status:'error',err_msg:err})
-              clearDownloadTaskChunk(task)
+              rmDir(path.join(task.target_path, task.file_db_key))
               return
             }
             // 下载的文件从pg中删除了 报错并删除本地文件夹
@@ -272,25 +263,26 @@ export default {
               err = `数据库中不存在该文件 file_name:${task.file_name} file_db_key:${task.file_db_key}`
               this.$store.commit('common/updateTaskStatus', {task_id:task.task_id,status:'error',err_msg:err})
               this.$message.error(`数据库文件丢失:${task.file_db_key}`)
-              clearDownloadTaskChunk(task)
+              rmDir(path.join(task.target_path, task.file_db_key))
               return
             }
             // 下载的文件从minio删除了 - 报错并删除本地文件夹
-            const fileStat = await statObject(task.file_db_key)
-            console.log('fileStat',fileStat)
-            if (!fileStat) {
+            // const fileStat = await statObject(task.file_db_key)
+            const fileExist = await isFileExists(path.join('./data',task.file_db_key))
+            if (!fileExist) {
               err = `对象存储中不存在该文件file_db_key:${task.file_db_key}`
               this.$store.commit('common/updateTaskStatus', {task_id:task.task_id,status:'error',err_msg:err})
               this.$message.error(`对象存储文件丢失:${task.file_db_key}`)
-              clearDownloadTaskChunk(task)
+              rmDir(path.join(task.target_path, task.file_db_key))
               return
             }
-            
+            const fileStat = await statFile(path.join('./data',task.file_db_key))
+            console.log('fileStat',fileStat)
             // 下载的文件size和task里的不一致 - 报错并删除文件夹
             if (task.file_size !== fileStat.size) {
               err = `对象存储中该文件大小发生变化 origin:${task.file_size} current:${fileStat.size}`
               this.$store.commit('common/updateTaskStatus', {task_id:task.task_id,status:'error',err_msg:err})
-              clearDownloadTaskChunk(task)
+              rmDir(path.join(task.target_path, task.file_db_key))
               return
             }
             // 从数据库中加载的task没有total_chunk_num，如果客户端重启，则需要重新计算total_chunk_num
@@ -298,8 +290,8 @@ export default {
               const total_chunk_num = task.file_size>0?Math.ceil(task.file_size/chunkSize):0
               this.$store.commit('common/updateTaskTotalChunkNum', {task_id:task.task_id,total_chunk_num:total_chunk_num})
             }
-            downloadFile(task)
-            // downloadFileLocal(task, chunkSize)
+            // downloadFile(task, chunkSize)
+            downloadFileLocal(task, chunkSize)
             break
           case 'pause':
             this.$store.commit('common/updateTaskStatus', {task_id:task.task_id,status:'pause'})
@@ -308,7 +300,7 @@ export default {
           case 'cancel':
             this.$store.commit('common/setCanceler', {task_id:task.task_id,canceler:'canceled by user'})
             this.$store.commit('common/removeTask', [task])
-            setTimeout(()=>{clearDownloadTaskChunk(task)},1000)
+            rmDir(path.join(task.target_path, task.file_db_key))
             return
           case 'error':
             this.triggerNewDownloadTask()
