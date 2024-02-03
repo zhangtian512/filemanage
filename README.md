@@ -70,25 +70,12 @@ npm config set chromedriver_cdnurl=https://mirrors.huaweicloud.com/chromedriver
 npm config set electron_mirror=https://mirrors.huaweicloud.com/electron/
 npm config set registry=https://mirrors.huaweicloud.com/repository/npm/
 
-##### 3.更换icon
-1. 修改package.json
-  "win": {
-    "icon": "build/icons/icon.ico"
-  }
-  为
-  "win": {
-    "icon": "build/icons/icon.png"
-  }
-2. 将下载好的icon.png放置build/icons文件夹，大小最低要求256*256
-3. 执行npm run build:dir
-4. 将生成的build/icon/.icon-ico/文件夹内的icon.ico拷贝置build/icons文件夹
-5. 将package.json中的
-  "win": {
-    "icon": "build/icons/icon.png"
-  }修改回去
-
-##### 4.修改配置
+##### 3.修改配置
 修改static/config.json文件中的配置
+
+##### 4.下载ffmpeg库文件
+由于github上传文件大小的限制，需要自己下载ffmpeg.exe和ffprobe.exe到static目录
+下载地址：[https://github.com/BtbN/FFmpeg-Builds/releases](https://github.com/BtbN/FFmpeg-Builds/releases)
 
 ##### 5.本地运行
 npm install
@@ -105,3 +92,19 @@ npm run build:dir
 4.  第一次运行软件会自动创建postgresql的database和schema，同时创建minio的bucket
 5.  当static/config.json文件中的migrate_db设置为true时，软件会从static/migrate文件夹中寻找最新版本的sql文件进行执行，当软件执行完migrate动作后会自动将migrate_db修改为false并保存
 6.  ctrl+P可唤出控制台
+7.  如何更换icon
+- 修改package.json
+  "win": {
+    "icon": "build/icons/icon.ico"
+  }
+  为
+  "win": {
+    "icon": "build/icons/icon.png"
+  }
+- 将下载好的icon.png放置build/icons文件夹，大小最低要求256*256
+- 执行npm run build:dir
+- 将生成的build/icon/.icon-ico/文件夹内的icon.ico拷贝置build/icons文件夹
+- 将package.json中的
+  "win": {
+    "icon": "build/icons/icon.png"
+  }修改回去
