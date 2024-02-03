@@ -111,8 +111,8 @@ npm run build:dir
     - 执行npm run build:dir
     - 将生成的build/icon/.icon-ico/文件夹内的icon.ico拷贝置build/icons文件夹
     - 将package.json中的
-      ```
+    ```
       "win": {
         "icon": "build/icons/icon.png"
       }修改回去
-      ```
+    ```
