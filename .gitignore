@@ -10,3 +10,6 @@ __pycache__/*
 *.log
 dist/
 data/
+*/ffmpeg.exe
+*/ffplay.exe
+*/ffprobe.exe
