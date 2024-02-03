@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  postgre:
+    container_name: pg
+    restart: always
+    image: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - 5432:5432
+  minio:
+    container_name: minio
+    restart: always
+    image: docker.io/bitnami/minio:2022
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=admin123
+      - MINIO_API_REQUESTS_MAX=3000

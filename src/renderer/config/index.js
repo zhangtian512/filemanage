@@ -1,0 +1,1 @@
+export const chunkSize = 10*1024*1024
